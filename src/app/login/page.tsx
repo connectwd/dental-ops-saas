@@ -1,11 +1,12 @@
 import { signIn } from "@/infrastructure/auth/auth";
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { callbackUrl?: string };
+  searchParams: Promise<{ callbackUrl?: string }>;
 }) {
-  const callbackUrl = searchParams?.callbackUrl ?? "/app";
+  const resolvedSearchParams = await searchParams;
+  const callbackUrl = resolvedSearchParams?.callbackUrl ?? "/app";
 
   async function login(formData: FormData) {
     "use server";
