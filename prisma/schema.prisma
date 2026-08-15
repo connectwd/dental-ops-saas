@@ -1,0 +1,60 @@
+// S00 FOUNDATION SCHEMA — minimal tenancy only.
+// Do NOT add Asset/QR/Inspection/Template models here — those belong to S01+.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  MANAGER
+  STAFF
+}
+
+model Organisation {
+  id        String        @id @default(cuid())
+  name      String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  sites     PracticeSite[]
+}
+
+model PracticeSite {
+  id             String       @id @default(cuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  name           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  memberships    Membership[]
+
+  @@index([organisationId])
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  displayName String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  memberships Membership[]
+}
+
+// User <-> PracticeSite with a role. This is the tenancy resolution point:
+// every protected server operation must resolve actor + tenant via Membership.
+model Membership {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  practiceSiteId String
+  practiceSite   PracticeSite   @relation(fields: [practiceSiteId], references: [id])
+  role           MembershipRole
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+
+  @@unique([userId, practiceSiteId])
+  @@index([practiceSiteId])
+}
